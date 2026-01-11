@@ -62,9 +62,18 @@ WORKDIR /CLIProxyAPI
 # 从构建阶段复制编译后的二进制文件
 COPY --from=builder /app/CLIProxyAPI /CLIProxyAPI/CLIProxyAPI
 
-# 复制配置文件示例，并创建默认配置
+# 复制配置文件示例
 COPY config.example.yaml /CLIProxyAPI/config.example.yaml
-RUN cp /CLIProxyAPI/config.example.yaml /CLIProxyAPI/config.yaml
+
+# 创建启用远程管理的配置文件
+RUN echo 'host: ""' > /CLIProxyAPI/config.yaml && \
+    echo 'port: 8317' >> /CLIProxyAPI/config.yaml && \
+    echo 'remote-management:' >> /CLIProxyAPI/config.yaml && \
+    echo '  allow-remote: true' >> /CLIProxyAPI/config.yaml && \
+    echo '  secret-key: "admin123"' >> /CLIProxyAPI/config.yaml && \
+    echo '  disable-control-panel: false' >> /CLIProxyAPI/config.yaml && \
+    echo 'auth-dir: "~/.cli-proxy-api"' >> /CLIProxyAPI/config.yaml && \
+    echo 'debug: false' >> /CLIProxyAPI/config.yaml
 
 # 设置文件权限
 RUN chmod +x /CLIProxyAPI/CLIProxyAPI && \
