@@ -29,8 +29,10 @@ ARG BUILD_DATE=unknown
 
 # 编译静态链接的二进制文件
 # -s -w 去除调试信息减小体积
+# -buildvcs=false 禁用 VCS 信息获取（修复 Fly.io 构建错误）
 # -ldflags 注入版本信息
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -buildvcs=false \
     -ldflags="-s -w \
     -X 'main.Version=${VERSION}' \
     -X 'main.Commit=${COMMIT}' \
