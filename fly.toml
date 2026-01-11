@@ -23,3 +23,4 @@ primary_region = 'syd'
 [mounts]
   source = "cli_proxy_data"
   destination = "/data"
+  initial_size = "1gb"
