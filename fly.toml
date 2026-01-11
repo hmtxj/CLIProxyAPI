@@ -1,7 +1,5 @@
-# fly.toml app configuration file generated for cliproxyapi-qxmbqa on 2026-01-11T11:40:34Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# fly.toml - CLIProxyAPI 完整配置
+# 更新日期：2026-01-11
 
 app = 'cliproxyapi-qxmbqa'
 primary_region = 'syd'
@@ -17,7 +15,11 @@ primary_region = 'syd'
   processes = ['app']
 
 [[vm]]
-  memory = '1gb'
+  memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 1024
+
+# 持久化存储 - 用于保存 OAuth 认证数据
+[mounts]
+  source = "cli_proxy_data"
+  destination = "/data"
