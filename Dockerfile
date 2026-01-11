@@ -62,8 +62,9 @@ WORKDIR /CLIProxyAPI
 # 从构建阶段复制编译后的二进制文件
 COPY --from=builder /app/CLIProxyAPI /CLIProxyAPI/CLIProxyAPI
 
-# 复制配置文件示例
+# 复制配置文件示例，并创建默认配置
 COPY config.example.yaml /CLIProxyAPI/config.example.yaml
+RUN cp /CLIProxyAPI/config.example.yaml /CLIProxyAPI/config.yaml
 
 # 设置文件权限
 RUN chmod +x /CLIProxyAPI/CLIProxyAPI && \
