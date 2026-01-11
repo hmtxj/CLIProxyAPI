@@ -665,6 +665,121 @@ func (h *Handler) DeleteAuthFile(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "ok"})
 }
 
+// FixAuthFile 修复凭证文件的格式
+// 将文件重命名为 antigravity-{email}.json 并添加/修复必要字段
+// PATCH /v0/management/auth-files/fix?name=原文件名&email=正确邮箱
+func (h *Handler) FixAuthFile(c *gin.Context) {
+	if h.authManager == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "core auth manager unavailable"})
+		return
+	}
+	ctx := c.Request.Context()
+
+	// 获取参数
+	name := c.Query("name")
+	email := c.Query("email")
+
+	if name == "" || strings.Contains(name, string(os.PathSeparator)) {
+		c.JSON(400, gin.H{"error": "invalid name parameter"})
+		return
+	}
+	if email == "" || !strings.Contains(email, "@") {
+		c.JSON(400, gin.H{"error": "invalid email parameter"})
+		return
+	}
+
+	// 读取原文件
+	oldPath := filepath.Join(h.cfg.AuthDir, filepath.Base(name))
+	if !filepath.IsAbs(oldPath) {
+		if abs, errAbs := filepath.Abs(oldPath); errAbs == nil {
+			oldPath = abs
+		}
+	}
+
+	data, err := os.ReadFile(oldPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			c.JSON(404, gin.H{"error": "file not found"})
+		} else {
+			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to read file: %v", err)})
+		}
+		return
+	}
+
+	// 解析原文件内容
+	var metadata map[string]any
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		c.JSON(400, gin.H{"error": fmt.Sprintf("invalid JSON file: %v", err)})
+		return
+	}
+
+	// 生成新文件名
+	newFileName := sanitizeAntigravityFileName(email)
+	newPath := filepath.Join(h.cfg.AuthDir, newFileName)
+	if !filepath.IsAbs(newPath) {
+		if abs, errAbs := filepath.Abs(newPath); errAbs == nil {
+			newPath = abs
+		}
+	}
+
+	// 更新必要字段
+	now := time.Now()
+	metadata["account"] = email
+	metadata["account_type"] = "oauth"
+	metadata["email"] = email
+	metadata["provider"] = "antigravity"
+	metadata["type"] = "antigravity"
+	metadata["id"] = newFileName
+	metadata["name"] = newFileName
+	metadata["label"] = email
+	metadata["path"] = newPath
+	metadata["updated_at"] = now.Format(time.RFC3339)
+	if _, ok := metadata["created_at"]; !ok {
+		metadata["created_at"] = now.Format(time.RFC3339)
+	}
+
+	// 序列化新内容
+	newData, err := json.MarshalIndent(metadata, "", "  ")
+	if err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("failed to serialize JSON: %v", err)})
+		return
+	}
+
+	// 更新 size 字段
+	metadata["size"] = len(newData)
+	newData, _ = json.MarshalIndent(metadata, "", "  ")
+
+	// 写入新文件
+	if err := os.WriteFile(newPath, newData, 0o600); err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("failed to write new file: %v", err)})
+		return
+	}
+
+	// 如果文件名不同，删除旧文件
+	if oldPath != newPath {
+		// 先禁用旧的 auth 记录
+		h.disableAuth(ctx, oldPath)
+		// 删除旧文件
+		if err := os.Remove(oldPath); err != nil && !os.IsNotExist(err) {
+			log.WithError(err).Warnf("failed to remove old auth file: %s", oldPath)
+		}
+	}
+
+	// 注册新的 auth 记录
+	if err := h.registerAuthFromFile(ctx, newPath, newData); err != nil {
+		c.JSON(500, gin.H{"error": fmt.Sprintf("failed to register auth: %v", err)})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"status":       "ok",
+		"old_name":     name,
+		"new_name":     newFileName,
+		"email":        email,
+		"message":      "凭证文件已修复",
+	})
+}
+
 func (h *Handler) authIDForPath(path string) string {
 	path = strings.TrimSpace(path)
 	if path == "" {

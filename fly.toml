@@ -18,6 +18,7 @@ primary_region = 'syd'
   memory = '512mb'
   cpu_kind = 'shared'
   cpus = 1
+  count = 1
 
 # 持久化存储 - 用于保存 OAuth 认证数据
 [mounts]
