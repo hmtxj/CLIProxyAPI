@@ -1,11 +1,15 @@
-# Fly.io 配置文件
-app = 'cliproxyapi'
-primary_region = 'hkg'
+# fly.toml app configuration file generated for cliproxyapi-qxmbqa on 2026-01-11T11:40:34Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'cliproxyapi-qxmbqa'
+primary_region = 'syd'
 
 [build]
 
 [http_service]
-  internal_port = 8317
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -13,10 +17,7 @@ primary_region = 'hkg'
   processes = ['app']
 
 [[vm]]
-  memory = '512mb'
+  memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
-[mounts]
-  source = "cli_proxy_data"
-  destination = "/home/cliproxy/.cli-proxy-api"
+  memory_mb = 1024
