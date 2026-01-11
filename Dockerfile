@@ -56,6 +56,7 @@ RUN echo 'host: ""' > /CLIProxyAPI/config.yaml && \
     echo '  allow-remote: true' >> /CLIProxyAPI/config.yaml && \
     echo '  secret-key: "${MANAGEMENT_PASSWORD:-admin123}"' >> /CLIProxyAPI/config.yaml && \
     echo '  disable-control-panel: false' >> /CLIProxyAPI/config.yaml && \
+    echo '  panel-github-repository: "https://github.com/hmtxj/Cli-Proxy-API-Management-Center"' >> /CLIProxyAPI/config.yaml && \
     echo '' >> /CLIProxyAPI/config.yaml && \
     echo 'auth-dir: "/data/.cli-proxy-api"' >> /CLIProxyAPI/config.yaml && \
     echo '' >> /CLIProxyAPI/config.yaml && \
