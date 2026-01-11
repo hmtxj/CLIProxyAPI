@@ -1,0 +1,84 @@
+# =============================================================================
+# CLIProxyAPI Docker Compose 配置
+# 更新日期：2026-01-11
+# =============================================================================
+
+services:
+  cli-proxy-api:
+    # 镜像配置
+    image: ${CLI_PROXY_IMAGE:-eceasy/cli-proxy-api:latest}
+    pull_policy: always
+
+    # 本地构建配置
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-none}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+
+    container_name: cli-proxy-api
+
+    # 环境变量
+    environment:
+      - DEPLOY=${DEPLOY:-}
+      - TZ=Asia/Shanghai
+      # 可选：PostgreSQL 存储
+      # - PGSTORE_DSN=${PGSTORE_DSN:-}
+      # 可选：Git 配置存储
+      # - GITSTORE_GIT_URL=${GITSTORE_GIT_URL:-}
+      # - GITSTORE_GIT_USERNAME=${GITSTORE_GIT_USERNAME:-}
+      # - GITSTORE_GIT_TOKEN=${GITSTORE_GIT_TOKEN:-}
+
+      # 端口映射
+    ports:
+      - "8317:8317" # 主 API 端口
+      - "8085:8085" # 附加服务端口
+      - "1455:1455" # 附加服务端口
+      - "54545:54545" # 附加服务端口
+      - "51121:51121" # 附加服务端口
+      - "11451:11451" # 附加服务端口
+
+    # 数据卷挂载
+    volumes:
+      # 配置文件（必须）
+      - ./config.yaml:/CLIProxyAPI/config.yaml:ro
+      # 认证数据目录
+      - ./auths:/home/cliproxy/.cli-proxy-api
+      # 日志目录
+      - ./logs:/CLIProxyAPI/logs
+
+    # 健康检查
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8317/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 资源限制（可选，根据需要调整）
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2.0'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+# 网络配置（可选）
+# networks:
+#   default:
+#     name: cliproxy-network
+#     driver: bridge
